@@ -50,7 +50,7 @@ class Text2ImageAPI:
             if data['status'] == 'DONE':
                 image_data = base64.b64decode(data['images'][0])
                 f = "data"
-                out = open(os.path.join(folder, f"{name}.png"), "wb")
+                out = open(f"data/{folder}/{name}.png", "xb")
                 out.write(image_data)
                 out.close()
                 return 0
