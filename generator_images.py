@@ -1,6 +1,6 @@
 import base64
 import json
-import os
+import os.path
 import time
 import Api_keys             #Для запуска создайте свой файл с ключом к fusionbrain.io
 import requests
@@ -57,20 +57,36 @@ class Text2ImageAPI:
 
             attempts -= 1
             time.sleep(delay)
+    def check_availible(self, name, folder):
+        if os.path.exists(f"data/{folder}/{name}.png"):
+            return True
+        else:
+            return False
 
-eating = ['Абрикос', 'Авокадо', 'Ананас', 'Апельсин', 'Арахис', 'Арбуз', 'Айва', 'Бананы','Брусника', 'Ваниль', 'Виноград', 'Вишня', 'Гранат', 'Грецкий орех', 'Гречка', 'Грибы', 'Груша', 'Дыня', 'Ежевика', 'Земляника', 'Инжир', 'Кабачки', 'Кальмар', 'Картофель', 'Кедровый орех', 'Кешью', 'Киви', 'Клубника', 'Клюква', 'Красная смородина', 'Кукуруза', 'Лайм', 'Лимон', 'Малина', 'Манго', 'Мандарины', 'Маракуйя', 'Маслины', 'Мёд', 'Морковь', 'Овсянка', 'Огурец', 'Оливки', 'Петрушка', 'Помидоры', 'Пшеница', 'Свёкла', 'Тыква', 'Фасоль', 'Хурма', 'Черешня', 'Черника', 'Чеснок', 'Чёрная смородина', 'Шелковица', 'Шиповник', 'Шоколад горький (чёрный)', 'Шпинат', 'Щавель', 'Эстрагон', 'Юзу', 'Яблоки', 'Яйца куриные', 'Ячневая крупа']
+eating = ['Абрикос', 'Авокадо', 'Ананас', 'Апельсин', 'Арбуз', 'Бананы', 'Вишня', 'Гранат', 'Грецкий орех', 'Гречка', 'Груша', 'Ежевика', 'Кальмар', 'Кедровый орех', 'Клубника', 'Красная смородина', 'Кукуруза', 'Лайм', 'Лимон', 'Малина', 'Манго', 'Мандарины', 'Морковь', 'Овсянка', 'Огурец', 'Оливки', 'Петрушка', 'Помидоры', 'Пшеница', 'Свёкла', 'Тыква', 'Хурма', 'Чеснок', 'Чёрная смородина', 'Шоколад горький (чёрный)', 'Яблоко', 'Яйца куриные']
 
-not_eating = ["Тарелка", "Ложка", "Стол", "Коробка", "Шкаф", "Камин", "Подушка", "Кровать", "Ванна", "Дом", "Машина", "Трактор", "Телефон", "Люстра", "Велосипед", "Коньки", "Лыжи"]
+not_eating = ["Тарелка", "Ложка", "Стол", "Коробка", "Шкаф", "Камин", "Подушка", "Кровать", "Дом", "Машина", "Трактор", "Велосипед", "Коньки", "Лыжи"]
+api = Text2ImageAPI('https://api-key.fusionbrain.ai/')
+model_id = api.get_model()
+
 for i in eating:
-    api = Text2ImageAPI('https://api-key.fusionbrain.ai/')
-    model_id = api.get_model()
-    uuid = api.generate(i, model_id)
-    images = api.check_generation(uuid, i, "eating")
-    print(images)
+    folder = "eating"
+    flag = api.check_availible(i, folder)
+    if flag:
+        print(f"{i} уже есть")
+        continue
+    else:
+        uuid = api.generate(i, model_id)
+        images = api.check_generation(uuid, i, folder)
+        print(images)
 
 for i in not_eating:
-    api = Text2ImageAPI('https://api-key.fusionbrain.ai/')
-    model_id = api.get_model()
-    uuid = api.generate(i, model_id)
-    images = api.check_generation(uuid, i, "not_eating")
-    print(images)
+    folder = "not_eating"
+    flag = api.check_availible(i, folder)
+    if flag:
+        print(f"{i} уже есть")
+        break
+    else:
+        uuid = api.generate(i, model_id)
+        images = api.check_generation(uuid, i, folder)
+        print(images)

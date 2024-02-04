@@ -1,10 +1,25 @@
-import os
 import json
-eating = []
-not_eating = []
-for i in os.listdir(f'data\eating'):
-    dictionary = dict()
-    dictionary["name"] = i.split(".")[0]
-    dictionary["path"] = f'data\eating\{i}'
+import os
+from pathlib import Path, PurePosixPath
 
-with open("data"
+
+def __main__():
+    eat = []
+    not_eat = []
+
+    for name in os.listdir(Path("data/eating")):
+        eat_dictionary = dict()
+        eat_dictionary["name"] = name.split('.')[0]
+        eat_dictionary["path"] = str(PurePosixPath(Path("data/eating") / name))
+        eat.append(eat_dictionary)
+
+    with Path("data/eat_json.txt").open("w", encoding="UTF-8") as folder:
+        json.dump(eat, folder)
+
+    for name in os.listdir(Path("data/not_eating")):
+        not_eat_dictionary = dict()
+        not_eat_dictionary["name"] = name.split(".")[0]
+        not_eat_dictionary["path"] = str(PurePosixPath(Path("data/eating") / name))
+        not_eat.append(not_eat_dictionary)
+    with Path("data/not_eat_json.txt").open("w", encoding="UTF-8") as folder:
+        json.dump(not_eat, folder)
