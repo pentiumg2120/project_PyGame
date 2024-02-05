@@ -1,10 +1,21 @@
 import json
-import pygame
 import os
+import random
 import sys
 from pathlib import Path
 
+import pygame
+
 import generator_json
+
+
+class image(pygame.sprite.Sprite):
+    def __init__(self, image, pos):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface((1024, 1024))
+        self.image.blit(image, (0, 0))
+        self.rect = self.image.get_rect()
+        self.rect.center = pos
 
 
 def load_image(name, color_key=None):
@@ -21,19 +32,11 @@ def load_image(name, color_key=None):
         image.set_colorkey(color_key)
     return image
 
-
+pygame.mixer.init()
 pygame.init()
 screen_size = (1920, 1000)
 screen = pygame.display.set_mode(screen_size)
 FPS = 50
-
-tile_images = {
-    'wall': load_image('box.png'),
-    'empty': load_image('grass.png')
-}
-player_image = load_image('mar.png')
-
-tile_width = tile_height = 50
 
 eating_items = []
 not_eating_items = []
@@ -45,52 +48,12 @@ class ScreenFrame(pygame.sprite.Sprite):
         self.rect = (0, 0, 500, 500)
 
 
-class SpriteGroup(pygame.sprite.Group):
-    def __init__(self):
-        super().__init__()
-
-    def get_event(self, event):
-        for sprite in self:
-            sprite.get_event(event)
-
-
-class Sprite(pygame.sprite.Sprite):
-
-    def __init__(self, group):
-        super().__init__(group)
-        self.rect = None
-
-    def get_event(self, event):
-        pass
-
-
-class Tile(Sprite):
-    def __init__(self, tile_type, pos_x, pos_y):
-        super().__init__(sprite_group)
-        self.image = tile_images[tile_type]
-        self.rect = self.image.get_rect().move(
-            tile_width * pos_x, tile_height * pos_y)
-
-
-class Player(Sprite):
-    def __init__(self, pos_x, pos_y):
-        super().__init__(hero_group)
-        self.image = player_image
-        self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 15, tile_height * pos_y + 5)
-        self.pos = (pos_x, pos_y)
-
-    def move(self, x, y):
-        self.pos = (x, y)
-        self.rect = self.image.get_rect().move(
-            tile_width * self.pos[0] + 15, tile_height * self.pos[1] + 5)
-
-
-player = None
 running = True
 clock = pygame.time.Clock()
-sprite_group = SpriteGroup()
-hero_group = SpriteGroup()
+picture_sprites = pygame.sprite.Group()
+
+good_answer = None
+score = 0
 
 
 def terminate():
@@ -128,6 +91,38 @@ def rule_screen():
         clock.tick(FPS)
 
 
+def end_screen():
+    global score
+    pygame.mixer.music.load('scan.ogg')
+    pygame.mixer.music.play()
+    intro_text = ["Лол, кек", f"Кстати ваш счет:{score}",
+                  "Всем удачи",
+                  "Всем пока!"]
+
+    fon = pygame.transform.scale(load_image(Path("./end_game/barinov.jpg")), screen_size)
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 85)
+    text_coord = 50
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color())
+        intro_rect = string_rendered.get_rect()
+        text_coord += 30
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 def load_json():
     global eating_items
     global not_eating_items
@@ -136,68 +131,72 @@ def load_json():
     for i in eating_items:
         i["path"] = Path(i["path"])
 
-    not_eating_items = json.loads(Path("data/eat_json.txt").read_text(encoding="UTF-8"))
+    not_eating_items = json.loads(Path("data/not_eat_json.txt").read_text(encoding="UTF-8"))
     for i in not_eating_items:
         i["path"] = Path(i["path"])
 
 
-def load_level(filename):
-    filename = "data/" + filename
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+def generate_level():
+    global good_answer
+    global first_picture, second_picture
+    good_picture_path = Path(random.choice(eating_items)["path"])
+    good_picture = load_image(good_picture_path)
+
+    bad_picture_path = Path(random.choice(not_eating_items)["path"])
+    bad_picture = load_image(bad_picture_path)
+
+    first_picture = random.choice((bad_picture, good_picture))
+    if first_picture == good_picture:
+        good_answer = 1
+        second_picture = bad_picture
+    else:
+        good_answer = 2
+        second_picture = good_picture
+    return [first_picture, second_picture]
 
 
-def generate_level(level):
-    new_player, x, y = None, None, None
-    for y in range(len(level)):
-        for x in range(len(level[y])):
-            if level[y][x] == '.':
-                Tile('empty', x, y)
-            elif level[y][x] == '#':
-                Tile('wall', x, y)
-            elif level[y][x] == '@':
-                Tile('empty', x, y)
-                new_player = Player(x, y)
-                level[y][x] = "."
-    return new_player, x, y
+def level():
+    global picture_sprites
+    first_picture, second_picture = generate_level()
+    picture_sprites = pygame.sprite.Group()
+    first_picture_sprite = image(first_picture, (500, 500))
+    second_picture_sprite = image(second_picture, (1500, 500))
+    picture_sprites.add(first_picture_sprite)
+    picture_sprites.add(second_picture_sprite)
 
 
-def move(hero, movement):
-    x, y = hero.pos
-    print(level_map[x][y - 1])
-    print(level_map[x][y + 1])
-    print(level_map[x - 1][y])
-    print(level_map[x][y + 1])
-    print()
-    if movement == "up":
-        if y > 0 and level_map[y - 1][x] == ".":
-            hero.move(x, y - 1)
-    elif movement == "down":
-        if y < max_y - 1 and level_map[y + 1][x] == ".":
-            hero.move(x, y + 1)
-    elif movement == "left":
-        if x > 0 and level_map[y][x - 1] == ".":
-            hero.move(x - 1, y)
-    elif movement == "right":
-        if x < max_x - 1 and level_map[y][x + 1] == ".":
-            hero.move(x + 1, y)
+def check_answer(answer):
+    global good_answer
+    global score
+    if answer == good_answer:
+        score += 10
+    else:
+        score -= 10
+    level()
 
 
 generator_json.__main__()
 load_json()
 start_screen()
 rule_screen()
-level_map = load_level("map.map")
-hero, max_x, max_y = generate_level(level_map)
+level()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    screen.fill(pygame.Color("black"))
-    sprite_group.draw(screen)
-    hero_group.draw(screen)
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_1:
+                check_answer(1)
+            elif event.key == pygame.K_2:
+                check_answer(2)
+            elif event.key == pygame.K_9:
+                level()
+            elif event.key == pygame.K_4:
+                end_screen()
+                terminate()
+
+    screen.fill(pygame.Color("yellow"))
+    picture_sprites.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
 pygame.quit()
