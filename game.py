@@ -18,7 +18,7 @@ class image(pygame.sprite.Sprite):
         self.rect.center = pos
 
 
-def load_image(name, color_key=None):
+def load_image(name):
     fullname = os.path.join('data', name)
     try:
         image = pygame.image.load(fullname)
@@ -26,11 +26,8 @@ def load_image(name, color_key=None):
         print('Не удаётся загрузить:', name)
         raise SystemExit(message)
     image = image.convert_alpha()
-    if color_key is not None:
-        if color_key == -1:
-            color_key = image.get_at((0, 0))
-        image.set_colorkey(color_key)
     return image
+
 
 pygame.mixer.init()
 pygame.init()
@@ -58,11 +55,11 @@ score = 0
 
 def terminate():
     pygame.quit()
-    sys.exit
+    sys.exit()
 
 
 def start_screen():
-    fon = pygame.transform.scale(load_image('zastavka\zastavka.png'), screen_size)
+    fon = pygame.transform.scale(load_image(Path('zastavka/zastavka.png')), screen_size)
     screen.blit(fon, (0, 0))
 
     while True:
@@ -77,7 +74,7 @@ def start_screen():
 
 
 def rule_screen():
-    fon = pygame.transform.scale(load_image("rule\_rule.png"), screen_size)
+    fon = pygame.transform.scale(load_image(Path("rule/rule.png")), screen_size)
     screen.blit(fon, (0, 0))
 
     while True:
@@ -93,7 +90,7 @@ def rule_screen():
 
 def end_screen():
     global score
-    pygame.mixer.music.load('scan.ogg')
+    pygame.mixer.music.load(Path("data/end_game/barinov.mp3"))
     pygame.mixer.music.play()
     intro_text = ["Лол, кек", f"Кстати ваш счет:{score}",
                   "Всем удачи",
@@ -104,7 +101,7 @@ def end_screen():
     font = pygame.font.Font(None, 85)
     text_coord = 50
     for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color())
+        string_rendered = font.render(line, 1, pygame.Color(3, 234, 255))
         intro_rect = string_rendered.get_rect()
         text_coord += 30
         intro_rect.top = text_coord
@@ -195,7 +192,6 @@ while running:
                 end_screen()
                 terminate()
 
-    screen.fill(pygame.Color("yellow"))
     picture_sprites.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
